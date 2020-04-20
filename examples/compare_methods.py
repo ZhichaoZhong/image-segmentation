@@ -4,6 +4,9 @@ from skimage.transform import rescale
 from matplotlib import pyplot as plt
 import numpy as np
 from mrcnn.config import Config
+import os
+
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # Load the data in your way
 image_dir = "./local_data/image_data/photostudio/validation/"
 image_name = "000222"
@@ -27,7 +30,7 @@ class InferenceConfig(Config):
     IMAGES_PER_GPU = 1
     NUM_CLASSES = 1 + 1
     IMAGE_MIN_DIM = 128
-    IMAGE_MAX_DIM = 128
+    IMAGE_MAX_DIM = 256
 config = InferenceConfig()
 
 model = load_maskrcnn_model(model_path, './model_log_dir', config)

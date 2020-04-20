@@ -143,8 +143,7 @@ class BoostedSegmenter(BasicSegmenter):
         seg = sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold)
         return seg
 
-    @staticmethod
-    def apply_soft_mask(img):
+    def apply_soft_mask(self, img):
         # Transform the image to gray image
         img = normalize_image_scale(rgb2gray(img))
 
