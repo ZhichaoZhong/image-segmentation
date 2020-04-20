@@ -105,3 +105,6 @@ venv.bak/
 
 #pycharm
 .idea/
+
+#local
+local_data/
