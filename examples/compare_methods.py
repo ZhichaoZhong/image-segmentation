@@ -1,28 +1,35 @@
-from seglib.segmentation import BoostedSegmenter, MaskRcnnSegmenter, WatershedSegmenter
+from seglib.segmentation import BoostedSegmenter, MaskRcnnSegmenter, WatershedSegmenter, load_maskrcnn_model
 from skimage import io as skio
+from skimage.transform import rescale
 from matplotlib import pyplot as plt
+import numpy as np
 
 # Load the data in your way
 image_dir = "./local_data/image_data/photostudio/validation/"
 image_name = "000222"
 image_mask = skio.imread(f'{image_dir}/pngs/{image_name}.png')
+image_mask = (image_mask[:,:,3]!=0).astype(np.int)
 image_orig = skio.imread(f'{image_dir}/jpgs/{image_name}.jpg')
+image_mask = rescale(image_mask, 0.25, preserve_range=True, multichannel=False)
+image_orig = rescale(image_orig, 0.25, preserve_range=True, multichannel=True).astype(np.int)
 
 # Path to the mask-rcnn model weight
 model_path = "./local_data/models/2020-04-15_GPU_EAL_deepfashion2-fotostudio_laplace_20200415T1525/mask_rcnn_fotostudio_0030.h5"
 
-boosted_seg = BoostedSegmenter(weight_path=model_path,
+watershed_seg = WatershedSegmenter(bg_threshold=0.6, fg_threshold=0.80)
+mask_ws = watershed_seg.segment(image_orig)
+skio.imshow(mask_ws)
+
+model = load_maskrcnn_model(model_path, './model_log_dir')
+boosted_seg = BoostedSegmenter(model=model,
                               gaussian_sigma=30,
                               bg_threshold=0.05,
-                              fg_threshold=0.80,
-                              model_dir='./model_log_dir',
-                              maskrcnn_config=None)
+                              fg_threshold=0.80)
 
-maskrcnn_seg = MaskRcnnSegmenter(weight_path=model_path,
-                              model_dir='./model_log_dir',
-                              maskrcnn_config=None)
+maskrcnn_seg = MaskRcnnSegmenter(model=model)
+mask_mr = maskrcnn_seg.segment(image_orig)
+skio.imshow(mask_mr)
 
-watershed_seg = WatershedSegmenter(bg_threshold=0.05, fg_threshold=0.80)
 
 mask_mr = maskrcnn_seg.segment(image_orig)
 mask_ws = watershed_seg.segment(image_orig)

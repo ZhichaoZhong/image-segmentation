@@ -14,7 +14,7 @@ def load_model(weight_path, maskrcnn_config=None, model_dir='./models'):
             IMAGES_PER_GPU = 1
             NUM_CLASSES = 1 + 1
             IMAGE_MIN_DIM = 128
-            IMAGE_MAX_DIM = 1024
+            IMAGE_MAX_DIM = 512
 
         inference_config = InferenceConfig()
     else:

@@ -1,3 +1,4 @@
+# scikit-image version 0.17
 import numpy as np
 import logging
 import mrcnn.model as modellib
@@ -10,6 +11,10 @@ from skimage.color import rgb2gray
 
 logger = logging.getLogger('image-seg')
 
+def normalize_image_scale(img):
+    img -= img.min()
+    img /= img.max()
+    return img
 
 def apply_mask(image, mask, reverse=False):
     """
@@ -51,7 +56,7 @@ def load_maskrcnn_model(weight_path, model_dir='./models', maskrcnn_config=None)
             IMAGES_PER_GPU = 1
             NUM_CLASSES = 1 + 1
             IMAGE_MIN_DIM = 128
-            IMAGE_MAX_DIM = 1024
+            IMAGE_MAX_DIM = 512
 
         inference_config = InferenceConfig()
     else:
@@ -87,6 +92,9 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     :return:
     Reference:
     """
+    assert img.max() <= 1.0 and img.min() >=0.0
+    assert len(img.shape) == 2
+
     data = img.copy()
     edges = sobel(data)
 
@@ -120,16 +128,14 @@ class BoostedSegmenter(BasicSegmenter):
     """
 
     def __init__(self,
-                 weight_path,
+                 model,
                  gaussian_sigma=30,
                  bg_threshold=0.05,
-                 fg_threshold=0.80,
-                 model_dir='./models',
-                 maskrcnn_config=None):
+                 fg_threshold=0.80):
         super().__init__()
         self.bg_threshold = bg_threshold
         self.fg_threshold = fg_threshold
-        self.model = load_maskrcnn_model(weight_path, model_dir, maskrcnn_config)
+        self.model = model
         self.sigma = gaussian_sigma
 
     def segment(self, img):
@@ -139,13 +145,15 @@ class BoostedSegmenter(BasicSegmenter):
 
     @staticmethod
     def apply_soft_mask(self, img):
+        # Transform the image to gray image
+        img = normalize_image_scale(rgb2gray(img))
+
         # Get a coarse mask using the mask-rcnn model
         pred_mask = predict_mask(self.model, img)
 
         # Create a soft mask using the softmask
         soft_mask = gaussian(pred_mask, self.sigma)
-        soft_mask -= soft_mask.min()
-        soft_mask /= soft_mask.max()
+        soft_mask = normalize_image_scale(soft_mask)
 
         # Apply the soft mask on the image
         processed_image = apply_mask(img, soft_mask, True)
@@ -154,11 +162,9 @@ class BoostedSegmenter(BasicSegmenter):
 
 class MaskRcnnSegmenter(BasicSegmenter):
     def __init__(self,
-                 weight_path,
-                 model_dir='./models',
-                 maskrcnn_config=None):
+                 model):
         super().__init__()
-        self.model = load_maskrcnn_model(weight_path, model_dir, maskrcnn_config)
+        self.model = model
 
     def segment(self, img):
         seg = predict_mask(self.model, img)
@@ -175,5 +181,7 @@ class WatershedSegmenter(BasicSegmenter):
 
     def segment(self, img):
         img = rgb2gray(img)
+        img = normalize_image_scale(img)
+        print(img.max(), img.min())
         seg = sobel_watershed(img, self.bg_threshold, self.fg_threshold)
         return seg
