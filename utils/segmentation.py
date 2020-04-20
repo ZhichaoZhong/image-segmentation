@@ -1,4 +1,3 @@
-
 import numpy as np
 import logging
 import mrcnn.model as modellib
@@ -11,7 +10,7 @@ from skimage.measure import label
 logger = logging.getLogger('image-seg')
 
 
-def apply_mask(image, mask, reverse = False):
+def apply_mask(image, mask, reverse=False):
     """
     Apply a mask on an image:
     :param image: numpy array. dim should be 2 or 3.
@@ -20,20 +19,20 @@ def apply_mask(image, mask, reverse = False):
     :return:
     """
     try:
-        assert mask.max() <= 1 and mask.min()>=0
-    except AssertionError as error:
+        assert mask.max() <= 1 and mask.min() >= 0
+    except AssertionError:
         logger.exception('Scale of mask must be between 0 and 1.')
     try:
         assert mask.shape == image.shape[:2]
-    except AssertionError as error:
+    except AssertionError:
         logger.exception('Shape of mask and image must be the same.')
 
     if reverse:
-        mask = mask.max()-mask
+        mask = mask.max() - mask
 
     image = image.copy()
-    if len(image.shape) ==2:
-        return image*mask
+    if len(image.shape) == 2:
+        return image * mask
     for c in range(image.shape[2]):
         image[:, :, c] = image[:, :, c] * mask
     return image
@@ -64,17 +63,19 @@ def load_maskrcnn_model(weight_path, model_dir='./models', maskrcnn_config=None)
     inference_model.load_weights(weight_path, by_name=True)
     return inference_model
 
+
 def predict_mask(model, img):
     """
     Predict mask for an image
     :param model: mask-rcnn mask instance.
-    :param images: 3D numpy array.
+    :param img: 3D numpy array.
     :return: 2D binary array.
     """
     assert len(img.shape) == 3, 'Input image must have channel dimension.'
     pred_result = model.detect([img], verbose=1)
     pred_mask = pred_result[0]['masks'].astype(np.int).squeeze()
     return pred_mask
+
 
 def sobel_watershed(img, bg_threshold, fg_threshold):
     """
@@ -97,33 +98,42 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     mask = label(ws == foreground)
     return mask
 
+
 # ------------------
 # Segmenter Class
 # ------------------
 
 class BasicSegmenter(object):
-    def init(self):
+    def __init__(self):
+        # TODO: logger?
         pass
+
     def segment(self, image):
         pass
+
 
 class BoostedSegmenter(BasicSegmenter):
     """
     Class to boost the coarse mask produced by mask-rcnn model
     using conventional segmentaion algorithms.
     """
-    def init(self,
-             weight_path,
-             gaussian_sigma=30,
-             model_dir='./models',
-             maskrcnn_config=None):
+
+    def __init__(self,
+                 weight_path,
+                 gaussian_sigma=30,
+                 bg_threshold=0.05,
+                 fg_threshold=0.80,
+                 model_dir='./models',
+                 maskrcnn_config=None):
+        super().__init__()
+        self.bg_threshold = bg_threshold
+        self.fg_threshold = fg_threshold
         self.model = load_maskrcnn_model(weight_path, model_dir, maskrcnn_config)
         self.sigma = gaussian_sigma
 
-
-    def segement(self, img):
+    def segment(self, img):
         processed_image = self.apply_soft_mask(img)
-        seg = sobel_watershed(processed_image)
+        seg = sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold)
         return seg
 
     @staticmethod
@@ -140,3 +150,28 @@ class BoostedSegmenter(BasicSegmenter):
         processed_image = apply_mask(img, soft_mask, True)
         return processed_image
 
+
+class MaskRcnnSegmenter(BasicSegmenter):
+    def __init__(self,
+                 weight_path,
+                 model_dir='./models',
+                 maskrcnn_config=None):
+        super().__init__()
+        self.model = load_maskrcnn_model(weight_path, model_dir, maskrcnn_config)
+
+    def segment(self, img):
+        seg = predict_mask(self.model, img)
+        return seg
+
+
+class WatershedSegmenter(BasicSegmenter):
+    def __init__(self,
+                 bg_threshold=0.05,
+                 fg_threshold=0.80):
+        super().__init__()
+        self.bg_threshold = bg_threshold
+        self.fg_threshold = fg_threshold
+
+    def segment(self, img):
+        seg = sobel_watershed(img, self.bg_threshold, self.fg_threshold)
+        return seg
