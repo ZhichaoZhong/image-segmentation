@@ -144,7 +144,7 @@ class BoostedSegmenter(BasicSegmenter):
         return seg
 
     @staticmethod
-    def apply_soft_mask(self, img):
+    def apply_soft_mask(img):
         # Transform the image to gray image
         img = normalize_image_scale(rgb2gray(img))
 

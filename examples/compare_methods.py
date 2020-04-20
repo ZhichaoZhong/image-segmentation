@@ -3,7 +3,7 @@ from skimage import io as skio
 from skimage.transform import rescale
 from matplotlib import pyplot as plt
 import numpy as np
-
+from mrcnn.config import Config
 # Load the data in your way
 image_dir = "./local_data/image_data/photostudio/validation/"
 image_name = "000222"
@@ -20,20 +20,28 @@ watershed_seg = WatershedSegmenter(bg_threshold=0.6, fg_threshold=0.80)
 mask_ws = watershed_seg.segment(image_orig)
 skio.imshow(mask_ws)
 
-model = load_maskrcnn_model(model_path, './model_log_dir')
-boosted_seg = BoostedSegmenter(model=model,
-                              gaussian_sigma=30,
-                              bg_threshold=0.05,
-                              fg_threshold=0.80)
+
+class InferenceConfig(Config):
+    NAME = 'segmentation'
+    GPU_COUNT = 1
+    IMAGES_PER_GPU = 1
+    NUM_CLASSES = 1 + 1
+    IMAGE_MIN_DIM = 128
+    IMAGE_MAX_DIM = 128
+config = InferenceConfig()
+
+model = load_maskrcnn_model(model_path, './model_log_dir', config)
 
 maskrcnn_seg = MaskRcnnSegmenter(model=model)
 mask_mr = maskrcnn_seg.segment(image_orig)
 skio.imshow(mask_mr)
 
-
-mask_mr = maskrcnn_seg.segment(image_orig)
-mask_ws = watershed_seg.segment(image_orig)
-mask_bs = boosted_seg(image_orig)
+boosted_seg = BoostedSegmenter(model=model,
+                              gaussian_sigma=30,
+                              bg_threshold=0.05,
+                              fg_threshold=0.80)
+mask_bs = boosted_seg.segment(image_orig)
+skio.imshow(mask_bs)
 
 
 def display_result(image, seg, gt, figsize=(15, 15)):
