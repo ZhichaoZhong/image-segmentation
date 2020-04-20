@@ -6,6 +6,7 @@ from mrcnn.config import Config
 from skimage.filters import sobel, gaussian
 from skimage.segmentation import watershed
 from skimage.measure import label
+from skimage.color import rgb2gray
 
 logger = logging.getLogger('image-seg')
 
@@ -173,5 +174,6 @@ class WatershedSegmenter(BasicSegmenter):
         self.fg_threshold = fg_threshold
 
     def segment(self, img):
+        img = rgb2gray(img)
         seg = sobel_watershed(img, self.bg_threshold, self.fg_threshold)
         return seg

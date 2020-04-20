@@ -108,3 +108,4 @@ venv.bak/
 
 #local
 local_data/
+model_log_dir/
