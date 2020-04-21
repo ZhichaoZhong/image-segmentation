@@ -92,7 +92,7 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     :return:
     Reference:
     """
-    assert img.max() <= 1.0 and img.min() >=0.0
+    assert img.max() <= 1.0 and img.min() >= 0.0
     assert len(img.shape) == 2
 
     data = img.copy()
@@ -139,23 +139,36 @@ class BoostedSegmenter(BasicSegmenter):
         self.sigma = gaussian_sigma
 
     def segment(self, img):
-        processed_image = self.apply_soft_mask(img)
+        processed_image = self._apply_soft_mask(img)
         seg = sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold)
         return seg
 
-    def apply_soft_mask(self, img):
-        # Transform the image to gray image
-        img = normalize_image_scale(rgb2gray(img))
-
+    def _get_soft_mask(self, img):
+        """
+        Return a soft mask based on the mrcnn predicted mask
+        :param img:
+        :return:
+        """
         # Get a coarse mask using the mask-rcnn model
         pred_mask = predict_mask(self.model, img)
-
-        # Create a soft mask using the softmask
+        # Apply a Gaussain filter to smooth the mask boundaries
         soft_mask = gaussian(pred_mask, self.sigma)
         soft_mask = normalize_image_scale(soft_mask)
+        return soft_mask
 
+    def _apply_soft_mask(self, img):
+        """
+        Apply a soft mask so as to darken or lighten the
+         object to segment
+        :param img: np.array(), 3D rgb image.
+        :return: np.array(), 2D gray image.
+        """
+        soft_mask = self._get_soft_mask(img)
+        # Transform the image to gray image
+        gray_img = normalize_image_scale(rgb2gray(img.copy()))
         # Apply the soft mask on the image
-        processed_image = apply_mask(img, soft_mask, True)
+        processed_image = apply_mask(gray_img, soft_mask, True)
+        processed_image /= processed_image.max()
         return processed_image
 
 
