@@ -35,12 +35,13 @@ def apply_mask(image, mask, reverse=False):
     if reverse:
         mask = mask.max() - mask
 
-    image = image.copy()
     if len(image.shape) == 2:
         return image * mask
+
+    image_masked = np.zeros_like(image)
     for c in range(image.shape[2]):
-        image[:, :, c] = image[:, :, c] * mask
-    return image
+        image_masked[:, :, c] = image[:, :, c] * mask
+    return image_masked
 
 
 def load_maskrcnn_model(weight_path, model_dir='./models', maskrcnn_config=None):
@@ -94,8 +95,10 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     assert img.max() <= 1.0 and img.min() >= 0.0
     assert len(img.shape) == 2
 
-    data = img.copy()
+    # data = img.copy()
+    data = img
     edges = sobel(data)
+
 
     markers = np.zeros_like(data)
     foreground, background = 1, 2
@@ -164,7 +167,8 @@ class BoostedSegmenter(BasicSegmenter):
         """
         soft_mask = self._get_soft_mask(img)
         # Transform the image to gray image
-        gray_img = normalize_image_scale(rgb2gray(img.copy()))
+        # gray_img = normalize_image_scale(rgb2gray(img.copy()))
+        gray_img = normalize_image_scale(rgb2gray(img))
         # Apply the soft mask on the image
         processed_image = apply_mask(gray_img, soft_mask, True)
         processed_image /= processed_image.max()
