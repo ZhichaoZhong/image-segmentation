@@ -145,6 +145,9 @@ class BoostedSegmenter(BasicSegmenter):
         seg = sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold)
         return seg
 
+    def _get_mrcnn_mask(self, img):
+        return predict_mask(self.model, img)
+
     def _get_soft_mask(self, img):
         """
         Return a soft mask based on the mrcnn predicted mask
@@ -152,7 +155,7 @@ class BoostedSegmenter(BasicSegmenter):
         :return:
         """
         # Get a coarse mask using the mask-rcnn model
-        pred_mask = predict_mask(self.model, img)
+        pred_mask = self._get_mrcnn_mask(img)
         # Apply a Gaussain filter to smooth the mask boundaries
         soft_mask = gaussian(pred_mask, self.sigma)
         soft_mask = normalize_image_scale(soft_mask)
