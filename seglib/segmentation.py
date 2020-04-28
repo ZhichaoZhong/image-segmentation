@@ -95,15 +95,11 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     assert img.max() <= 1.0 and img.min() >= 0.0
     assert len(img.shape) == 2
 
-    # data = img.copy()
-    data = img
-    edges = sobel(data)
-
-
-    markers = np.zeros_like(data)
+    edges = sobel(img)
+    markers = np.zeros_like(img)
     foreground, background = 1, 2
-    markers[data > bg_threshold] = background
-    markers[data < fg_threshold] = foreground
+    markers[img > bg_threshold] = background
+    markers[img < fg_threshold] = foreground
 
     ws = watershed(edges, markers)
     mask = (ws == foreground).astype(np.int)
@@ -131,14 +127,16 @@ class BoostedSegmenter(BasicSegmenter):
 
     def __init__(self,
                  model,
-                 gaussian_sigma=30,
+                 sigma_inner=30,
+                 sigma_outer=60,
                  bg_threshold=0.05,
                  fg_threshold=0.80):
         super().__init__()
         self.bg_threshold = bg_threshold
         self.fg_threshold = fg_threshold
         self.model = model
-        self.sigma = gaussian_sigma
+        self.sigma_inner = sigma_inner
+        self.sigma_outer = sigma_outer
 
     def segment(self, img):
         processed_image = self._apply_soft_mask(img)
@@ -157,7 +155,12 @@ class BoostedSegmenter(BasicSegmenter):
         # Get a coarse mask using the mask-rcnn model
         pred_mask = self._get_mrcnn_mask(img)
         # Apply a Gaussain filter to smooth the mask boundaries
-        soft_mask = gaussian(pred_mask, self.sigma)
+        soft_mask_inner = gaussian(pred_mask, self.sigma_inner)
+        soft_mask_inner = normalize_image_scale(soft_mask_inner)
+        soft_mask_outer = gaussian(pred_mask, self.sigma_outer)
+        soft_mask_outer = 1-normalize_image_scale(soft_mask_outer)
+
+        soft_mask = np.multiply(soft_mask_inner, soft_mask_outer)
         soft_mask = normalize_image_scale(soft_mask)
         return soft_mask
 
@@ -170,10 +173,9 @@ class BoostedSegmenter(BasicSegmenter):
         """
         soft_mask = self._get_soft_mask(img)
         # Transform the image to gray image
-        # gray_img = normalize_image_scale(rgb2gray(img.copy()))
         gray_img = normalize_image_scale(rgb2gray(img))
         # Apply the soft mask on the image
-        processed_image = apply_mask(gray_img, soft_mask, True)
+        processed_image = apply_mask(gray_img, soft_mask, False)
         processed_image /= processed_image.max()
         return processed_image
 
