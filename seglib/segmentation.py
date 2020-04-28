@@ -158,11 +158,9 @@ class BoostedSegmenter(BasicSegmenter):
         soft_mask_inner = gaussian(pred_mask, self.sigma_inner)
         soft_mask_inner = normalize_image_scale(soft_mask_inner)
         soft_mask_outer = gaussian(pred_mask, self.sigma_outer)
-        soft_mask_outer = 1-normalize_image_scale(soft_mask_outer)
+        soft_mask_outer = normalize_image_scale(soft_mask_outer)
 
-        soft_mask = np.multiply(soft_mask_inner, soft_mask_outer)
-        soft_mask = normalize_image_scale(soft_mask)
-        return soft_mask
+        return soft_mask_inner, soft_mask_outer
 
     def _apply_soft_mask(self, img):
         """
@@ -171,11 +169,13 @@ class BoostedSegmenter(BasicSegmenter):
         :param img: np.array(), 3D rgb image.
         :return: np.array(), 2D gray image.
         """
-        soft_mask = self._get_soft_mask(img)
+        soft_mask_inner, soft_mask_outer = self._get_soft_mask(img)
         # Transform the image to gray image
         gray_img = normalize_image_scale(rgb2gray(img))
+        # Wipe out the background
+        gray_img = np.where(soft_mask_outer>0.1, gray_img, 1.0)
         # Apply the soft mask on the image
-        processed_image = apply_mask(gray_img, soft_mask, False)
+        processed_image = apply_mask(gray_img, soft_mask_inner, True)
         processed_image /= processed_image.max()
         return processed_image
 
