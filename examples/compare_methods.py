@@ -43,7 +43,7 @@ model_path = "./local_data/models/2020-04-15_GPU_EAL_deepfashion2-fotostudio_lap
 
 watershed_seg = WatershedSegmenter(bg_threshold=0.6, fg_threshold=0.80)
 mask_ws = watershed_seg.segment(image_orig)
-# skio.imshow(mask_ws)
+skio.imshow(mask_ws)
 
 
 class InferenceConfig(Config):
@@ -57,9 +57,9 @@ config = InferenceConfig()
 
 model = load_maskrcnn_model(model_path, './model_log_dir', config)
 
-# maskrcnn_seg = MaskRcnnSegmenter(model=model)
-# mask_mr = maskrcnn_seg.segment(image_orig)
-# skio.imshow(mask_mr)
+maskrcnn_seg = MaskRcnnSegmenter(model=model)
+mask_mr = maskrcnn_seg.segment(image_orig)
+skio.imshow(mask_mr)
 
 boosted_seg = BoostedSegmenter(model=model,
                               gaussian_sigma=10,

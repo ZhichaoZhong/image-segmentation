@@ -1,9 +1,6 @@
 # scikit-image version 0.17
 import numpy as np
 import logging
-import mrcnn.model as modellib
-from mrcnn.config import Config
-
 from skimage.filters import sobel, gaussian
 from skimage.segmentation import watershed
 from skimage.color import rgb2gray
@@ -134,7 +131,7 @@ class BoostedSegmenter(BasicSegmenter):
         if isinstance(img, list):
             pass
         else:
-            return_1 = True
+            return_one = True
             img = [img]
 
         mrcnn_mask = self._get_mrcnn_mask(img)
@@ -143,7 +140,7 @@ class BoostedSegmenter(BasicSegmenter):
             processed_image = self._apply_soft_mask(image, mask)
             segs.append(sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold))
 
-        if return_1:
+        if return_one:
             return segs[0]
         return segs
     def _get_mrcnn_mask(self, img):
@@ -196,11 +193,11 @@ class MaskRcnnSegmenter(BasicSegmenter):
         if isinstance(img, list):
             pass
         else:
-            return_1 = True
+            return_one = True
             img = [img]
 
         seg = predict_mask(self.model, img)
-        if return_1:
+        if return_one:
             return seg[0]
         return seg
 
@@ -229,7 +226,7 @@ class WatershedSegmenter(BasicSegmenter):
         if isinstance(img, list):
             pass
         else:
-            return_1 = True
+            return_one = True
             img = [img]
 
         seg = []
@@ -238,6 +235,6 @@ class WatershedSegmenter(BasicSegmenter):
             image = normalize_image_scale(rgb2gray(image))
             seg.append(sobel_watershed(image, self.bg_threshold, self.fg_threshold))
 
-        if return_1:
+        if return_one:
             return seg[0]
         return seg
