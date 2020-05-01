@@ -44,44 +44,17 @@ def apply_mask(image, mask, reverse=False):
     return image_masked
 
 
-def load_maskrcnn_model(weight_path, model_dir='./models', maskrcnn_config=None):
-    """Load mask-rcnn models from a h5 file.
-    :params
-        weight_path:
-    """
-    if not maskrcnn_config:
-        class InferenceConfig(Config):
-            NAME = 'segmentation'
-            GPU_COUNT = 1
-            IMAGES_PER_GPU = 1
-            NUM_CLASSES = 1 + 1
-            IMAGE_MIN_DIM = 128
-            IMAGE_MAX_DIM = 512
-
-        inference_config = InferenceConfig()
-    else:
-        inference_config = maskrcnn_config
-
-    inference_model = modellib.MaskRCNN(mode="inference",
-                                        config=inference_config,
-                                        model_dir=model_dir)
-    print("Loading weights from ", weight_path)
-    inference_model.load_weights(weight_path, by_name=True)
-    return inference_model
-
-
 def predict_mask(model, img):
     """
-    Predict mask for an image
+    Predict the mask for an image using a maskrcnn model
     :param model: mask-rcnn mask instance.
     :param img: 3D numpy array.
     :return: 2D binary array.
     """
     assert len(img.shape) == 3, 'Input image must have channel dimension.'
-    pred_result = model.detect([img], verbose=1)
+    pred_result = model.detect([img], verbose=0)
     pred_mask = pred_result[0]['masks'].astype(np.int).squeeze()
     return pred_mask
-
 
 def sobel_watershed(img, bg_threshold, fg_threshold):
     """
@@ -95,11 +68,11 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     assert img.max() <= 1.0 and img.min() >= 0.0
     assert len(img.shape) == 2
 
-    # data = img.copy()
     data = img
+    # Detect the edges of the image
     edges = sobel(data)
 
-
+    # Define the initial markers for the watershed algorithm
     markers = np.zeros_like(data)
     foreground, background = 1, 2
     markers[data > bg_threshold] = background
@@ -177,17 +150,23 @@ class BoostedSegmenter(BasicSegmenter):
         processed_image /= processed_image.max()
         return processed_image
 
-
 class MaskRcnnSegmenter(BasicSegmenter):
-    def __init__(self,
-                 model):
+    def __init__(self, model):
+        """
+        A segmenter class that use mask-rcnn model to segment
+        :param model: a maskrcnn model instance.
+        """
         super().__init__()
         self.model = model
 
     def segment(self, img):
+        """
+        Segment the input image.
+        :param img: One or a list of rgb images of dimension [M, N, C]
+        :return:
+        """
         seg = predict_mask(self.model, img)
         return seg
-
 
 class WatershedSegmenter(BasicSegmenter):
     def __init__(self,
