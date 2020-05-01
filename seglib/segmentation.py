@@ -51,19 +51,20 @@ def predict_mask(model, img):
     :param img: 3D numpy array.
     :return: 2D binary array.
     """
-    assert len(img.shape) == 3, 'Input image must have channel dimension.'
-    pred_result = model.detect([img], verbose=0)
-    pred_mask = pred_result[0]['masks'].astype(np.int).squeeze()
+    assert len(img[0].shape) == 3, 'Input image must have channel dimension.'
+    pred_result = model.detect(img, verbose=0)
+    pred_mask = [p['masks'].astype(np.int).squeeze() for p in pred_result]
     return pred_mask
 
 def sobel_watershed(img, bg_threshold, fg_threshold):
     """
     Segment an image using a sobel+watershed approach.
-    :param img: gray image. 2D numpy array of scale range [0, 1].
+    :param img: gray image of shape [M, N] and scale range [0.0, 1.0].
     :param bg_threshold:
     :param fg_threshold:
-    :return:
+    :return: a binary image of shape [M, N]
     Reference:
+    https://scikit-image.org/docs/dev/api/skimage.segmentation.html#skimage.segmentation.watershed
     """
     assert img.max() <= 1.0 and img.min() >= 0.0
     assert len(img.shape) == 2
@@ -89,7 +90,6 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
 
 class BasicSegmenter(object):
     def __init__(self):
-        # TODO: logger?
         pass
 
     def segment(self, image):
@@ -134,7 +134,7 @@ class BoostedSegmenter(BasicSegmenter):
         soft_mask = normalize_image_scale(soft_mask)
         return soft_mask
 
-    def _apply_soft_mask(self, img):
+    def _apply_soft_mask(self, img, ):
         """
         Apply a soft mask so as to darken or lighten the
          object to segment
@@ -161,24 +161,55 @@ class MaskRcnnSegmenter(BasicSegmenter):
 
     def segment(self, img):
         """
-        Segment the input image.
+        Segment the input images.
         :param img: One or a list of rgb images of dimension [M, N, C]
-        :return:
+        :return: One or a list of binary images of dimension [M, N]
         """
+        if isinstance(img, list):
+            pass
+        else:
+            return_1 = True
+            img = [img]
+
         seg = predict_mask(self.model, img)
+        if return_1:
+            return seg[0]
         return seg
+
 
 class WatershedSegmenter(BasicSegmenter):
     def __init__(self,
-                 bg_threshold=0.05,
-                 fg_threshold=0.80):
+                 bg_threshold=0.01,
+                 fg_threshold=0.60):
+        """
+        A segmenter class that uses the watershed segmentation method
+        :param bg_threshold: background grayscale threshold. Default is 0.01.
+        :param fg_threshold: foreground grayscale threshold. Default is 0.60.
+        reference:
+        https://scikit-image.org/docs/dev/api/skimage.segmentation.html#skimage.segmentation.watershed
+        """
         super().__init__()
         self.bg_threshold = bg_threshold
         self.fg_threshold = fg_threshold
 
     def segment(self, img):
-        img = rgb2gray(img)
-        img = normalize_image_scale(img)
-        print(img.max(), img.min())
-        seg = sobel_watershed(img, self.bg_threshold, self.fg_threshold)
+        """
+        Segment the input images.
+        :param img: One or a list of rgb images of dimension [M, N, C]
+        :return: One or a list of binary images of dimension [M, N]
+        """
+        if isinstance(img, list):
+            pass
+        else:
+            return_1 = True
+            img = [img]
+
+        seg = []
+        for image in img:
+            # Convert the input image to grayscale image between [0.0, 1.0]
+            image = normalize_image_scale(rgb2gray(image))
+            seg.append(sobel_watershed(image, self.bg_threshold, self.fg_threshold))
+
+        if return_1:
+            return seg[0]
         return seg
