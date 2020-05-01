@@ -97,57 +97,78 @@ class BasicSegmenter(object):
 
 
 class BoostedSegmenter(BasicSegmenter):
-    """
-    Class to boost the coarse mask produced by mask-rcnn model
-    using conventional segmentaion algorithms.
-    """
-
     def __init__(self,
                  model,
                  gaussian_sigma=30,
-                 bg_threshold=0.05,
-                 fg_threshold=0.80):
+                 gaussian_sigma_outer=60,
+                 bg_threshold=0.01,
+                 fg_threshold=0.60,
+                 mask_background=False):
+        """
+        Class to boost the coarse mask produced by mask-rcnn model
+        using conventional segmentaion algorithms.
+
+        :param model:  a maskrcnn model instance.
+        :param gaussian_sigma: the gaussian_sigma to softly mask on the input image.
+        :param gaussian_sigma_outer: the gaussian sigma to adjust the range of masking the background.
+                                    Only required when mask_background = True.
+        :param bg_threshold: background grayscale threshold. Default is 0.01.
+        :param fg_threshold: foreground grayscale threshold. Default is 0.60.
+        :param mask_background: bool. If True, all the area outside the mrcnn mask (enlarged by a gaussian filter)
+                                will be set to white.
+        """
         super().__init__()
         self.bg_threshold = bg_threshold
         self.fg_threshold = fg_threshold
         self.model = model
-        self.sigma = gaussian_sigma
+        self.sigma_inner = gaussian_sigma
+        self.sigma_outer = gaussian_sigma_outer
+        self.mask_background = mask_background
 
     def segment(self, img):
-        processed_image = self._apply_soft_mask(img)
-        seg = sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold)
-        return seg
-
-    def _get_mrcnn_mask(self, img):
-        return predict_mask(self.model, img)
-
-    def _get_soft_mask(self, img):
         """
-        Return a soft mask based on the mrcnn predicted mask
-        :param img:
-        :return:
+        Segment the input images.
+        :param img: One or a list of rgb images of dimension [M, N, C]
+        :return: One or a list of binary images of dimension [M, N]
         """
-        # Get a coarse mask using the mask-rcnn model
-        pred_mask = self._get_mrcnn_mask(img)
-        # Apply a Gaussain filter to smooth the mask boundaries
-        soft_mask = gaussian(pred_mask, self.sigma)
-        soft_mask = normalize_image_scale(soft_mask)
-        return soft_mask
+        if isinstance(img, list):
+            pass
+        else:
+            return_1 = True
+            img = [img]
 
-    def _apply_soft_mask(self, img, ):
+        mrcnn_mask = predict_mask(self.model, img)
+        segs = []
+        for mask, image in zip(mrcnn_mask, img):
+            processed_image = self._apply_soft_mask(image, mask)
+            segs.append(sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold))
+
+        if return_1:
+            return segs[0]
+        return segs
+
+    def _apply_soft_mask(self, img,  mrcnn_mask):
         """
         Apply a soft mask so as to darken or lighten the
          object to segment
         :param img: np.array(), 3D rgb image.
         :return: np.array(), 2D gray image.
         """
-        soft_mask = self._get_soft_mask(img)
         # Transform the image to gray image
-        # gray_img = normalize_image_scale(rgb2gray(img.copy()))
         gray_img = normalize_image_scale(rgb2gray(img))
+
+        if self.mask_background:
+            soft_mask_outer = normalize_image_scale(gaussian(mrcnn_mask, self.sigma_outer))
+            # Wipe out the background at half maximal
+            gray_img = np.where(soft_mask_outer>0.5, gray_img, 1.0)
+
+        # Apply a Gaussain filter to smooth the mask boundaries
+        soft_mask_inner = normalize_image_scale(gaussian(mrcnn_mask, self.sigma_inner))
+
         # Apply the soft mask on the image
-        processed_image = apply_mask(gray_img, soft_mask, True)
+        processed_image = apply_mask(gray_img, soft_mask_inner, True)
         processed_image /= processed_image.max()
+
         return processed_image
 
 class MaskRcnnSegmenter(BasicSegmenter):
