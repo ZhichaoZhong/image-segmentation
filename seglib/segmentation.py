@@ -137,7 +137,7 @@ class BoostedSegmenter(BasicSegmenter):
             return_1 = True
             img = [img]
 
-        mrcnn_mask = predict_mask(self.model, img)
+        mrcnn_mask = self._get_mrcnn_mask(img)
         segs = []
         for mask, image in zip(mrcnn_mask, img):
             processed_image = self._apply_soft_mask(image, mask)
@@ -146,6 +146,13 @@ class BoostedSegmenter(BasicSegmenter):
         if return_1:
             return segs[0]
         return segs
+    def _get_mrcnn_mask(self, img):
+        """
+        This function is created so that the predict method can be overridden
+        :param img:
+        :return:
+        """
+        return predict_mask(self.model, img)
 
     def _apply_soft_mask(self, img,  mrcnn_mask):
         """
