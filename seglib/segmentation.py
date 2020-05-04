@@ -149,6 +149,8 @@ class BoostedSegmenter(BasicSegmenter):
         :param img:
         :return:
         """
+        assert isinstance(img, list)
+
         return predict_mask(self.model, img)
 
     def _apply_soft_mask(self, img,  mrcnn_mask):
