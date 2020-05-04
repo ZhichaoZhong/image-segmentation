@@ -10,7 +10,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 # Load the data in your way
 image_dir = "./local_data/image_data/photostudio/validation/"
-image_name = "000222"
+image_name = "000062"
 image_mask = skio.imread(f'{image_dir}/pngs/{image_name}.png')
 image_mask = (image_mask[:, :, 3]!=0).astype(np.int)
 image_orig = skio.imread(f'{image_dir}/jpgs/{image_name}.jpg')

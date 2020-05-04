@@ -1,15 +1,18 @@
 """
-This example shows how to use the boostedSegmenter class to segment an image with the boosted approach
+This example shows how to use the boostedSegmenter class to segment an image with the boosted approach.
+Compared to the example boosted_segmentation.py, this example enable the masking background feature,
+which helps to suppress the non-white background pixels.
 """
 
 from seglib.segmentation import BoostedSegmenter, apply_mask
 from seglib.utils import load_mrcnn_model, get_iou
 from skimage import io as skio
 from skimage.transform import rescale
-import numpy as np
-import os
 from mrcnn.config import Config
 from matplotlib import pyplot as plt
+import numpy as np
+import os
+
 
 # Only required on a macbook
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
@@ -40,9 +43,11 @@ model = load_mrcnn_model(model_path, './model_log_dir', config)
 # Initialize a BoostedSegmenter instance with the following parameters
 boosted_seg = BoostedSegmenter(model=model,
                                gaussian_sigma=24,
+                               gaussian_sigma_outer=24,
+                               gaussian_threshold_outer=0.2,
                                bg_threshold=0.6,
-                               fg_threshold=0.01,
-                               mask_background=False)
+                               fg_threshold=0.05,
+                               mask_background=True)
 
 # Get the mask from the instance
 mask_bst = boosted_seg.segment(image_orig)

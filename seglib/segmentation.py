@@ -53,7 +53,7 @@ def predict_mask(model, img):
     pred_mask = [p['masks'].astype(np.int).squeeze() for p in pred_result]
     return pred_mask
 
-def sobel_watershed(img, bg_threshold, fg_threshold):
+def sobel_watershed(img, bg_threshold, fg_threshold, mask=None):
     """
     Segment an image using a sobel+watershed approach.
     :param img: gray image of shape [M, N] and scale range [0.0, 1.0].
@@ -73,8 +73,13 @@ def sobel_watershed(img, bg_threshold, fg_threshold):
     # Define the initial markers for the watershed algorithm
     markers = np.zeros_like(data)
     foreground, background = 1, 2
-    markers[data > bg_threshold] = background
-    markers[data < fg_threshold] = foreground
+
+    if mask is not None:
+        markers[(mask < 0.5) & (data > bg_threshold)] = background
+        markers[(mask > 0.5) & (data < fg_threshold)] = foreground
+    else:
+        markers[data > bg_threshold] = background
+        markers[data < fg_threshold] = foreground
 
     ws = watershed(edges, markers)
     mask = (ws == foreground).astype(np.int)
@@ -98,6 +103,7 @@ class BoostedSegmenter(BasicSegmenter):
                  model,
                  gaussian_sigma=30,
                  gaussian_sigma_outer=60,
+                 gaussian_threshold_outer=0.2,
                  bg_threshold=0.01,
                  fg_threshold=0.60,
                  mask_background=False):
@@ -108,6 +114,8 @@ class BoostedSegmenter(BasicSegmenter):
         :param model:  a maskrcnn model instance.
         :param gaussian_sigma: the gaussian_sigma to softly mask on the input image.
         :param gaussian_sigma_outer: the gaussian sigma to adjust the range of masking the background.
+                                    Only required when mask_background = True.
+        :param gaussian_threshold_outer: the threshold to cutoff the outer mask.
                                     Only required when mask_background = True.
         :param bg_threshold: background grayscale threshold. Default is 0.01.
         :param fg_threshold: foreground grayscale threshold. Default is 0.60.
@@ -120,6 +128,7 @@ class BoostedSegmenter(BasicSegmenter):
         self.model = model
         self.sigma_inner = gaussian_sigma
         self.sigma_outer = gaussian_sigma_outer
+        self.threshold_outer = gaussian_threshold_outer
         self.mask_background = mask_background
 
     def segment(self, img):
@@ -138,7 +147,7 @@ class BoostedSegmenter(BasicSegmenter):
         segs = []
         for mask, image in zip(mrcnn_mask, img):
             processed_image = self._apply_soft_mask(image, mask)
-            segs.append(sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold))
+            segs.append(sobel_watershed(processed_image, self.bg_threshold, self.fg_threshold, mask))
 
         if return_one:
             return segs[0]
@@ -166,7 +175,7 @@ class BoostedSegmenter(BasicSegmenter):
         if self.mask_background:
             soft_mask_outer = normalize_image_scale(gaussian(mrcnn_mask, self.sigma_outer))
             # Wipe out the background at half maximal
-            gray_img = np.where(soft_mask_outer>0.5, gray_img, 1.0)
+            gray_img = np.where(soft_mask_outer > self.threshold_outer, gray_img, 1.0)
 
         # Apply a Gaussain filter to smooth the mask boundaries
         soft_mask_inner = normalize_image_scale(gaussian(mrcnn_mask, self.sigma_inner))
@@ -207,7 +216,8 @@ class MaskRcnnSegmenter(BasicSegmenter):
 class WatershedSegmenter(BasicSegmenter):
     def __init__(self,
                  bg_threshold=0.01,
-                 fg_threshold=0.60):
+                 fg_threshold=0.60,
+                 init_mask=None):
         """
         A segmenter class that uses the watershed segmentation method
         :param bg_threshold: background grayscale threshold. Default is 0.01.
@@ -218,6 +228,7 @@ class WatershedSegmenter(BasicSegmenter):
         super().__init__()
         self.bg_threshold = bg_threshold
         self.fg_threshold = fg_threshold
+        self.init_mask = init_mask
 
     def segment(self, img):
         """
@@ -235,7 +246,7 @@ class WatershedSegmenter(BasicSegmenter):
         for image in img:
             # Convert the input image to grayscale image between [0.0, 1.0]
             image = normalize_image_scale(rgb2gray(image))
-            seg.append(sobel_watershed(image, self.bg_threshold, self.fg_threshold))
+            seg.append(sobel_watershed(image, self.bg_threshold, self.fg_threshold, self.init_mask))
 
         if return_one:
             return seg[0]
