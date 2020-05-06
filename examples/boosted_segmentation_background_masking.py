@@ -77,5 +77,5 @@ i += 1; plot_i(ax, i, mask_mrcnn, f"Maskrcnn mask. IOU: {iou_mrcnn: 0.4f}", cmap
 i += 1; plot_i(ax, i, soft_image, "Softly-masked image", cmap='gray')
 i += 1; plot_i(ax, i, mask_bst, f"Boosted-seg mask. IOU: {iou_bst: 0.4f}", cmap='gray')
 i += 1; plot_i(ax, i, masked_img, "Masked image")
-i += 1; plot_i(ax, i, mask_orig, "Ground-truth mask")
+i += 1; plot_i(ax, i, mask_orig, "Ground-truth mask", cmap='gray')
 fig.show()
