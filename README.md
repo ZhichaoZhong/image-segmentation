@@ -57,7 +57,7 @@ following procedures:
 3. Use the mrcnn mask as the markers.  
 4. Apply the watershed algorithms on the softly-masked image.  
 This image describes the boosted approach the best:
-<img src="assets/boosted_approach_explain.png" width="460" height="320" alt="Segmentation task"/>
+<img src="assets/boosted_approach_explain.png" width="920" height="640" alt="Segmentation task"/>
 
 ### Benchmark
 ToDo
