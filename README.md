@@ -21,7 +21,7 @@ One of the state-of-the-art techniques is to [use neural-network models](https:/
 on different images. However, the final output mask is interpolated from a 28X28 feature map, 
 and therefore the accuracy is very low compared the resolution of our images (2400X1600). The size of the feature map can be 
 increased to  56X56, or even 112X112, but hardly higher due to the limitation of GPU memory.    
-<img src="assets/mrcnn_example.png" width="360" height="200" alt="Segmentation task"/>
+<img src="assets/mrcnn_example.png" width="400" height="200" alt="Segmentation task"/>
   
 #### Watershed
 We looked at some [segmentation techniques](https://scikit-image.org/docs/dev/api/skimage.segmentation.html) that can potential perform well on high resolution image. 
@@ -31,10 +31,10 @@ summarized in three steps:
 2. Label markers as foreground and background (e.g. using thresholds). 
 3. Flood the markers till reaching the edges.
 Here is an example:  
-<img src="assets/watershed_example.png" width="700" height="200" alt="Segmentation task"/>
+<img src="assets/watershed_example.png" width="870" height="320" alt="Segmentation task"/>
 The watershed approach is straightforward and performs well on the edges by nature. However, it is difficult to label the markers 
 in an automatic manner. Also, the edges inside instance to be segmented can be troublesome. Below is a bad example:
-<img src="assets/watershed_example_bad.png" width="700" height="300" alt="Segmentation task"/>
+<img src="assets/watershed_example_bad.png" width="870" height="320" alt="Segmentation task"/>
  
 #### The boosted approach
 The boosted approach dedicates itself to compensate the drawbacks of both approach. It can be summarized by the following procedures:
