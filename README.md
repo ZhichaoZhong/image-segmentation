@@ -7,9 +7,20 @@ gives you the basic example to start with.
 
 ### Prerequisites
 1. [The mask-rcnn inplementation](https://github.com/matterport/Mask_RCNN/blob/master/requirements.txt)
-2. Check `requirements.txt`  
+2. A pretrained mask-rcnn model
+3. See `requirements.txt`  
 
-### Boosted segmentation method
+### Installing
+```buildoutcfg
+git clone https://github.com/ZhichaoZhong/image-segmentation.git
+cd image-segmentation
+pip install -e .
+```
+Or
+```buildoutcfg
+pip install git+https://github.com/ZhichaoZhong/image-segmentation.git
+```
+## Boosted segmentation method
 #### Semantic segmentation task
 This library is used to perform a simple semantic segmentation task: given a photo of a clothing, segment the clothing 
 from the background with a high resolution. Below is an example:  
