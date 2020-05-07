@@ -20,6 +20,14 @@ Or
 ```buildoutcfg
 pip install git+https://github.com/ZhichaoZhong/image-segmentation.git
 ```
+
+### Contributing
+Contributions to this repository are welcome. Examples of things you can contribute:
+1. Add utility functions e.g. evaluate
+2. Benchmark the segmentation accuracy
+3. Tests
+4. Improve the approach
+
 ## Boosted segmentation method
 #### Semantic segmentation task
 This library can be used to perform a simple semantic segmentation task: given a high-resolution natural photo of a 
