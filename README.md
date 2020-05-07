@@ -2,14 +2,19 @@
 This repository contains the codes to segment a raw images taken at the photo studio.  
 
 ## Getting Started:
-[boosted_segmentation.py](https://github.com/ZhichaoZhong/image-segmentation/blob/master/examples/boosted_segmentation.py) gives you the basic example to start with.
+[boosted_segmentation.py](./examples/boosted_segmentation.py) 
+gives you the basic example to start with.
 
 ### Prerequisites
 1. [The mask-rcnn inplementation](https://github.com/matterport/Mask_RCNN/blob/master/requirements.txt)
 2. Check `requirements.txt`  
 
 ### Boosted segmentation method
-T
+#### Semantic segmentation task
+This library is used to perform a simple semantic segmentation task: given a photo of a clothing, segment the clothing 
+from the background with a high resolution. Below is an example:
+
+![Example](./assets/task.png =100x200)
 
 ### ToDo:
 1. [x] Merge the two-soft branch to master 
