@@ -43,11 +43,11 @@ The watershed approach can be summarized as three steps:
 2. Label markers as foreground and background (e.g. using thresholds). 
 3. Flood the markers till reaching the edges.
 Here is an example:  
-<img src="assets/watershed_example.png" width="450" height="160" alt="Segmentation task"/>
+<img src="assets/watershed_example.png" width="570" height="200" alt="Segmentation task"/>
 The watershed approach is straightforward, and performs well on the edges by nature. However, it is difficult to label 
 the markers in an automatic manner. Also, the edges inside instance to be segmented can be troublesome. 
 Below is a bad example:
-<img src="assets/watershed_example_bad.png" width="460" height="160" alt="Segmentation task"/>
+<img src="assets/watershed_example_bad.png" width="570" height="200" alt="Segmentation task"/>
  
 #### The boosted approach
 The boosted approach dedicates itself to compensate the drawbacks of both approach. It can be summarized as the 
@@ -59,9 +59,9 @@ following procedures:
 This image describes the boosted approach the best:
 <img src="assets/boosted_approach_explain.png" width="920" height="640" alt="Segmentation task"/>
 
-### Benchmark
+## Benchmark
 ToDo
-### ToDo:
+## ToDo:
 1. [x] Merge the two-soft branch to master 
 2. [x] Edit the example notebooks
 3. Finish the readme:  
