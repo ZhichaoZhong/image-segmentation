@@ -14,7 +14,7 @@ gives you the basic example to start with.
 This library is used to perform a simple semantic segmentation task: given a photo of a clothing, segment the clothing 
 from the background with a high resolution. Below is an example:
 
-![Example](./assets/task.png)
+<img src="assets/task.png" width="400" height="200" alt="Segmentation task"/>
 
 ### ToDo:
 1. [x] Merge the two-soft branch to master 
