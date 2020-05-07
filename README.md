@@ -27,6 +27,7 @@ Contributions to this repository are welcome. Examples of things you can contrib
 2. Benchmark the segmentation accuracy
 3. Tests
 4. Improve the approach
+5. Include NN models other than mask-rcnn
 
 ## Boosted segmentation method
 #### Semantic segmentation task
